@@ -5,7 +5,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'command'
 require_relative 'installer_uninstaller_utils'
 require_relative 'exceptions'
 require_relative 'deprecate'
@@ -676,7 +675,7 @@ class Gem::Installer
     @development         = options[:development]
     @build_root          = options[:build_root]
 
-    @build_args = options[:build_args] || Gem::Command.build_args
+    @build_args = options[:build_args]
 
     unless @build_root.nil?
       @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ''))
@@ -832,7 +831,7 @@ TEXT
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
-    builder = Gem::Ext::Builder.new spec, @build_args
+    builder = Gem::Ext::Builder.new spec, build_args
 
     builder.build_extensions
   end
@@ -919,7 +918,7 @@ TEXT
   # extensions.
 
   def write_build_info_file
-    return if @build_args.empty?
+    return if build_args.empty?
 
     build_info_dir = File.join gem_home, 'build_info'
 
@@ -929,7 +928,7 @@ TEXT
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
     File.open build_info_file, 'w' do |io|
-      @build_args.each do |arg|
+      build_args.each do |arg|
         io.puts arg
       end
     end
@@ -953,5 +952,14 @@ TEXT
     end
 
     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
+  end
+
+  private
+
+  def build_args
+    @build_args ||= begin
+                      require_relative "command"
+                      Gem::Command.build_args
+                    end
   end
 end
